@@ -14,19 +14,117 @@ pub mod runtime;
 /// The built-in connectors database.
 pub mod connectors;
 
-use std::{borrow::Cow, collections::BTreeMap, str::FromStr};
-
 pub use crate::connectors::Features;
+
 use crate::connectors::Tags;
 use connection_string::JdbcString;
+use connectors::Capabilities;
 use enumflags2::BitFlags;
 use once_cell::sync::Lazy;
 use quaint::{prelude::Queryable, single::Quaint};
+use runtime::test_tokio_runtime;
+use std::{borrow::Cow, collections::BTreeMap, io::Write as _, str::FromStr};
 use url::Url;
 
 type AnyError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 const SCHEMA_NAME: &str = "prisma-tests";
+
+#[derive(Debug)]
+pub struct DbUnderTest {
+    tags: BitFlags<Tags>,
+    capabilities: BitFlags<Capabilities>,
+}
+
+pub static TAGS: Lazy<Result<DbUnderTest, String>> = Lazy::new(|| {
+    let database_url = std::env::var("TEST_DATABASE_URL").map_err(|_| "Missing TEST_DATABASE URL".to_owned())?;
+    let prefix = database_url
+        .find(':')
+        .map(|prefix_end| &database_url[..prefix_end])
+        .unwrap_or(database_url.as_str());
+
+    match prefix {
+        "file" | "sqlite" => Ok(DbUnderTest {
+            tags: Tags::Sqlite.into(),
+            capabilities: BitFlags::empty(),
+        }),
+        "mysql" => Ok(DbUnderTest {
+            tags: get_mysql_tags(&database_url)?,
+            capabilities: Capabilities::Enums | Capabilities::Json,
+        }),
+        _ => Err("Unknown database URL".into()),
+    }
+});
+
+fn get_mysql_tags(database_url: &str) -> Result<BitFlags<Tags>, String> {
+    let fut = async {
+        let quaint = Quaint::new(database_url).await.map_err(|err| err.to_string())?;
+        let mut tags = Tags::Mysql.into();
+
+        let version = quaint.version().await.map_err(|err| err.to_string())?;
+
+        match version {
+            None => Ok(tags),
+            Some(version) => {
+                if version.contains("5.6") {
+                    tags |= Tags::Mysql56
+                }
+
+                if version.contains("5.7") {
+                    tags |= Tags::Mysql57
+                }
+
+                if version.contains("8.") {
+                    tags |= Tags::Mysql8
+                }
+
+                if version.contains("MariaDB") {
+                    tags |= Tags::Mariadb
+                }
+
+                Ok(tags)
+            }
+        }
+    };
+
+    test_tokio_runtime().block_on(fut)
+}
+
+pub fn should_skip_test(
+    include_tagged: BitFlags<Tags>,
+    exclude_tags: BitFlags<Tags>,
+    capabilities: BitFlags<Capabilities>,
+) -> bool {
+    match TAGS.as_ref() {
+        Ok(db_under_test) => {
+            if !capabilities.is_empty() && !capabilities.intersects(db_under_test.capabilities) {
+                println!("Test skipped");
+                return true;
+            }
+
+            if exclude_tags.intersects(db_under_test.tags) {
+                println!("Test skipped");
+                return true;
+            }
+
+            if !include_tagged.intersects(db_under_test.tags) {
+                println!("Test skipped");
+                return true;
+            }
+
+            false
+        }
+        Err(explanation) => {
+            let stderr = std::io::stderr();
+
+            let mut sink = stderr.lock();
+            sink.write_all(explanation.as_bytes()).unwrap();
+            sink.write_all(b"\n").unwrap();
+
+            std::process::exit(1)
+        }
+    }
+}
 
 pub struct TestApiArgs {
     pub connector_tags: BitFlags<Tags>,

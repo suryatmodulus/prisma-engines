@@ -5,8 +5,83 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use std::str::FromStr;
-use syn::{parse_macro_input, spanned::Spanned, AttributeArgs, Ident, ItemFn};
+use syn::{parse_macro_input, spanned::Spanned, AttributeArgs, Ident, ItemFn, MetaList};
+use syn::{Meta, NestedMeta};
 use test_setup::connectors::{Capabilities, Connector, Features, Tags, CONNECTORS};
+
+#[derive(Default)]
+struct TestDisAttrs {
+    include_tagged: Vec<syn::Path>,
+    exclude_tagged: Vec<syn::Path>,
+    capabilities: Vec<syn::Path>,
+}
+
+impl TestDisAttrs {
+    fn ingest_meta_list(&mut self, list: MetaList) -> Result<(), syn::Error> {
+        let target: &mut Vec<_> = match list.path {
+            p if p.is_ident("tags") => &mut self.include_tagged,
+            other => return Err(syn::Error::new_spanned(other, "Unexpected argument")),
+        };
+
+        target.reserve(list.nested.len());
+
+        for item in list.nested {
+            match item {
+                NestedMeta::Meta(Meta::Path(p)) if p.get_ident().is_some() => {
+                    target.push(p);
+                }
+                other => return Err(syn::Error::new_spanned(other, "Unexpected argument")),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub fn test_dis_impl(attr: TokenStream, input: TokenStream) -> TokenStream {
+    let attributes_meta: syn::AttributeArgs = parse_macro_input!(attr as AttributeArgs);
+    let test_function = parse_macro_input!(input as ItemFn);
+    let test_function_name = &test_function.sig.ident;
+
+    let mut attrs = TestDisAttrs::default();
+
+    for meta in attributes_meta {
+        match meta {
+            NestedMeta::Meta(Meta::List(list)) => {
+                if let Err(err) = attrs.ingest_meta_list(list) {
+                    return err.to_compile_error().into();
+                }
+            }
+            other => {
+                return syn::Error::new_spanned(other, "Unexpected argument")
+                    .into_compile_error()
+                    .into()
+            }
+        }
+    }
+
+    let include_tagged = &attrs.include_tagged;
+    let exclude_tagged = &attrs.exclude_tagged;
+    let capabilities = &attrs.capabilities;
+    let test_name = Ident::new(&format!("{}_test", test_function_name), Span::call_site());
+
+    let tokens = quote! {
+        #test_function
+
+        #[test]
+        fn #test_name() {
+            if test_setup::should_skip_test(
+                BitFlags::empty() #(| Tags::#include_tagged)*,
+                BitFlags::empty() #(| Tags::#exclude_tagged)*,
+                BitFlags::empty() #(| Tags::#capabilities)*,
+            ) { return }
+
+            #test_function_name ( TestApi::new() );
+        }
+    };
+
+    tokens.into()
+}
 
 static TAGS_FILTER: Lazy<BitFlags<Tags>> = Lazy::new(|| {
     let tags_str = std::env::var("TEST_EACH_CONNECTOR_TAGS").ok();

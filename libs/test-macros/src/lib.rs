@@ -6,6 +6,11 @@ use proc_macro::TokenStream;
 use syn::ItemFn;
 
 #[proc_macro_attribute]
+pub fn test_case(attr: TokenStream, input: TokenStream) -> TokenStream {
+    test_each_connector::test_dis_impl(attr, input)
+}
+
+#[proc_macro_attribute]
 pub fn test_each_connector(attr: TokenStream, input: TokenStream) -> TokenStream {
     test_each_connector::test_each_connector_impl(attr, input)
 }
