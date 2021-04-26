@@ -1,5 +1,6 @@
-use migration_engine_tests::sql::*;
+use migration_engine_tests::the_next_generation::*;
 use sql_schema_describer::ColumnTypeFamily;
+use test_macros::test_case;
 
 const SCHEMA: &str = r#"
 model Cat {
@@ -15,19 +16,17 @@ model Box {
 }
 "#;
 
-#[test_each_connector]
-async fn schema_push_happy_path(api: &TestApi) -> TestResult {
+#[test_case]
+fn schema_push_happy_path(api: &TestApi) {
     api.schema_push(SCHEMA)
         .send()
-        .await?
-        .assert_green()?
+        .assert_green()
         .assert_has_executed_steps()?;
 
     api.assert_schema()
-        .await?
         .assert_table("Cat", |table| {
             table.assert_column("boxId", |col| col.assert_type_family(ColumnTypeFamily::Int))
-        })?
+        })
         .assert_table("Box", |table| {
             table.assert_column("material", |col| col.assert_type_family(ColumnTypeFamily::String))
         })?;
@@ -49,12 +48,10 @@ async fn schema_push_happy_path(api: &TestApi) -> TestResult {
 
     api.schema_push(dm2)
         .send()
-        .await?
         .assert_green()?
         .assert_has_executed_steps()?;
 
     api.assert_schema()
-        .await?
         .assert_table("Cat", |table| {
             table.assert_column("boxId", |col| col.assert_type_family(ColumnTypeFamily::Int))
         })?
@@ -62,9 +59,7 @@ async fn schema_push_happy_path(api: &TestApi) -> TestResult {
             table
                 .assert_columns_count(3)?
                 .assert_column("texture", |col| col.assert_type_family(ColumnTypeFamily::String))
-        })?;
-
-    Ok(())
+        });
 }
 
 #[test_each_connector]

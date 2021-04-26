@@ -2,6 +2,7 @@
 
 pub mod multi_engine_test_api;
 pub mod sql;
+pub mod the_next_generation;
 
 mod assertions;
 mod test_api;
