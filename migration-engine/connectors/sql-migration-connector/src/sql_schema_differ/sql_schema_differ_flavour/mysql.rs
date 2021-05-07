@@ -11,6 +11,10 @@ impl SqlSchemaDifferFlavour for MysqlFlavour {
         !self.is_mariadb() && !self.is_mysql_5_6()
     }
 
+    fn can_migrate_arity_change_on_fk_columns(&self) -> bool {
+        false
+    }
+
     fn column_type_change(&self, differ: &ColumnDiffer<'_>) -> Option<ColumnTypeChange> {
         // On MariaDB, JSON is an alias for LONGTEXT. https://mariadb.com/kb/en/json-data-type/
         if self.is_mariadb() {

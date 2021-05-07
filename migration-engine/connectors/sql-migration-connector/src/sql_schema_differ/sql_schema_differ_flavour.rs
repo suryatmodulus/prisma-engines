@@ -25,6 +25,12 @@ pub(crate) trait SqlSchemaDifferFlavour {
         true
     }
 
+    /// Can columns constrained by a foreign key be made required without
+    /// dropping and recreating the foreign key?
+    fn can_migrate_arity_change_on_fk_columns(&self) -> bool {
+        true
+    }
+
     /// Return whether a column's type needs to be migrated, and how.
     fn column_type_change(&self, differ: &ColumnDiffer<'_>) -> Option<ColumnTypeChange> {
         if differ.previous.column_type_family() != differ.next.column_type_family() {

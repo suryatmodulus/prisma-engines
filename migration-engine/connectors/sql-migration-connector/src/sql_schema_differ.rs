@@ -152,6 +152,8 @@ impl<'schema> SqlSchemaDiffer<'schema> {
             push_foreign_keys_from_created_tables(&mut add_foreign_keys, self.created_tables());
         }
 
+        if !self.flavour.can_migrate_arity_change_on_fk_columns() {}
+
         push_created_foreign_keys(&mut add_foreign_keys, table_pairs);
 
         add_foreign_keys
