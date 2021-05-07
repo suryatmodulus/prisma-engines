@@ -28,8 +28,11 @@ impl DatabaseMigrationMarker for SqlMigration {
     }
 }
 
+/// We use the order of the enum variants for comparison, so order matters here.
 #[derive(Debug)]
 pub(crate) enum SqlMigrationStep {
+    CreateEnum(CreateEnum),
+    AlterEnum(AlterEnum),
     AddForeignKey(AddForeignKey),
     CreateTable(CreateTable),
     AlterTable(AlterTable),
@@ -40,9 +43,7 @@ pub(crate) enum SqlMigrationStep {
     CreateIndex(CreateIndex),
     DropIndex(DropIndex),
     AlterIndex { table: Pair<usize>, index: Pair<usize> },
-    CreateEnum(CreateEnum),
     DropEnum(DropEnum),
-    AlterEnum(AlterEnum),
     DropView(DropView),
     DropUserDefinedType(DropUserDefinedType),
 }

@@ -3,7 +3,7 @@ use sql_schema_describer::{
     SqlSchema,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct Pair<T> {
     previous: T,
     next: T,
@@ -58,6 +58,10 @@ impl<T> Pair<T> {
 
     pub(crate) fn next(&self) -> &T {
         &self.next
+    }
+
+    pub(crate) fn next_mut(&mut self) -> &mut T {
+        &mut self.next
     }
 }
 

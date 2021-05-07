@@ -1,4 +1,4 @@
-use super::column::ColumnDiffer;
+use super::{column::ColumnDiffer, differ_database::DifferDatabase};
 use crate::{flavour::SqlFlavour, pair::Pair};
 use sql_schema_describer::{
     walkers::{ColumnWalker, ForeignKeyWalker, IndexWalker, TableWalker},
@@ -6,8 +6,8 @@ use sql_schema_describer::{
 };
 
 pub(crate) struct TableDiffer<'a> {
-    pub(crate) flavour: &'a dyn SqlFlavour,
-    pub(crate) tables: Pair<TableWalker<'a>>,
+    pub(super) db: &'a DifferDatabase<'a>,
+    pub(super) tables: Pair<TableWalker<'a>>,
 }
 
 impl<'schema> TableDiffer<'schema> {

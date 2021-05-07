@@ -1,10 +1,10 @@
-use super::{column::ColumnDiffer, ColumnTypeChange, SqlSchemaDiffer};
+use super::{column::ColumnDiffer, ColumnTypeChange};
 use crate::{
     pair::Pair,
     sql_migration::{AlterEnum, AlterTable, CreateEnum, CreateIndex, DropEnum, DropIndex},
 };
 use sql_schema_describer::walkers::IndexWalker;
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 mod mssql;
 mod mysql;
@@ -58,6 +58,11 @@ pub(crate) trait SqlSchemaDifferFlavour {
     /// Return whether an index should be renamed by the migration.
     fn index_should_be_renamed(&self, indexes: &Pair<IndexWalker<'_>>) -> bool {
         indexes.previous().name() != indexes.next().name()
+    }
+
+    /// Normalize a table name, so string comparison can accurately determine whether two tables are the same.
+    fn normalize_table_name<'a>(&self, table_name: &'a str) -> Cow<'a, str> {
+        Cow::Borrowed(table_name)
     }
 
     /// Evaluate indexes/constraints that need to be dropped and re-created based on other changes in the schema

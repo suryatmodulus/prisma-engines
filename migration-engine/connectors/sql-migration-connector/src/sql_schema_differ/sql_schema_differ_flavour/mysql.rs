@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::SqlSchemaDifferFlavour;
 use crate::{
     flavour::MysqlFlavour, flavour::MYSQL_IDENTIFIER_SIZE_LIMIT, pair::Pair, sql_schema_differ::column::ColumnDiffer,
@@ -74,6 +76,14 @@ impl SqlSchemaDifferFlavour for MysqlFlavour {
             previous_name[0..MYSQL_IDENTIFIER_SIZE_LIMIT] != next_name[0..MYSQL_IDENTIFIER_SIZE_LIMIT]
         } else {
             previous_name != next_name
+        }
+    }
+
+    fn normalize_table_name<'a>(&self, table_name: &'a str) -> Cow<'a, str> {
+        if self.lower_cases_table_names() {
+            Cow::Owned(table_name.to_lowercase())
+        } else {
+            Cow::Borrowed(table_name)
         }
     }
 
