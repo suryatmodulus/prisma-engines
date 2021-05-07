@@ -71,16 +71,11 @@ static TAGS: Lazy<Result<DbUnderTest, String>> = Lazy::new(|| {
         }),
         "mysql" => {
             let tags = mysql::get_mysql_tags(&database_url)?;
-            let mut capabilities = Capabilities::Enums | Capabilities::Json;
-
-            if tags.contains(Tags::Vitess) {
-                capabilities |= Capabilities::CreateDatabase;
-            }
 
             Ok(DbUnderTest {
                 tags,
                 database_url,
-                capabilities,
+                capabilities: Capabilities::Enums | Capabilities::Json,
                 provider: "mysql",
                 shadow_database_url,
             })

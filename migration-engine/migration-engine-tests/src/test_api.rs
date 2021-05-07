@@ -24,7 +24,6 @@ use crate::{
 use dev_diagnostic::DevDiagnostic;
 use mark_migration_rolled_back::MarkMigrationRolledBack;
 use migration_connector::{ConnectorError, MigrationPersistence, MigrationRecord};
-use migration_core::GenericApi;
 use quaint::{
     prelude::{ConnectionInfo, Queryable, SqlFamily},
     single::Quaint,
@@ -52,15 +51,7 @@ impl TestApi {
             args.test_function_name()
         };
 
-        let (_conn, connection_string): (_, String) = if tags.contains(Tags::Mysql | Tags::Vitess) {
-            let connector =
-                SqlMigrationConnector::new(args.database_url(), args.shadow_database_url().map(String::from))
-                    .await
-                    .unwrap();
-            connector.reset().await.unwrap();
-
-            (connector.quaint().clone(), args.database_url().to_owned())
-        } else if tags.contains(Tags::Mysql) {
+        let (_conn, connection_string): (_, String) = if tags.contains(Tags::Mysql) {
             create_mysql_database(&db_name).await.unwrap()
         } else if tags.contains(Tags::Postgres) {
             create_postgres_database(&db_name).await.unwrap()
@@ -79,10 +70,6 @@ impl TestApi {
         let api = SqlMigrationConnector::new(&connection_string, args.shadow_database_url().map(String::from))
             .await
             .unwrap();
-
-        if tags.contains(Tags::Vitess) {
-            api.reset().await.unwrap()
-        }
 
         let mut circumstances = BitFlags::empty();
 

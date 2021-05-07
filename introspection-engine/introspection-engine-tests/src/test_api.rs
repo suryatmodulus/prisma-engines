@@ -39,15 +39,7 @@ impl TestApi {
             args.test_function_name()
         };
 
-        let (database, connection_string): (Quaint, String) = if tags.intersects(Tags::Vitess) {
-            let me = SqlMigrationConnector::new(&connection_string, None).await.unwrap();
-            me.reset().await.unwrap();
-
-            (
-                Quaint::new(&connection_string).await.unwrap(),
-                connection_string.to_owned(),
-            )
-        } else if tags.contains(Tags::Mysql) {
+        let (database, connection_string): (Quaint, String) = if tags.contains(Tags::Mysql) {
             create_mysql_database(db_name).await.unwrap()
         } else if tags.contains(Tags::Postgres) {
             create_postgres_database(db_name).await.unwrap()

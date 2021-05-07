@@ -30,19 +30,6 @@ impl TestApi {
 
         let (admin_conn, connection_string) = if tags.contains(Tags::Postgres) {
             rt.block_on(test_setup::create_postgres_database(db_name)).unwrap()
-        } else if tags.contains(Tags::Vitess) {
-            let conn = rt
-                .block_on(SqlMigrationConnector::new(
-                    args.database_url(),
-                    args.shadow_database_url().map(String::from),
-                ))
-                .unwrap();
-            rt.block_on(conn.reset()).unwrap();
-
-            (
-                rt.block_on(Quaint::new(args.database_url())).unwrap(),
-                args.database_url().to_owned(),
-            )
         } else if tags.contains(Tags::Mysql) {
             rt.block_on(test_setup::create_mysql_database(db_name)).unwrap()
         } else if tags.contains(Tags::Mssql) {
