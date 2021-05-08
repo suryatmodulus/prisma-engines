@@ -1,5 +1,6 @@
 mod column;
 mod enums;
+mod differ_database;
 mod index;
 mod sql_schema_differ_flavour;
 mod table;
