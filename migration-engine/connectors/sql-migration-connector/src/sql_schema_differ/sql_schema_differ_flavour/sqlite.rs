@@ -3,8 +3,10 @@ use sql_schema_describer::ColumnTypeFamily;
 use super::SqlSchemaDifferFlavour;
 use crate::{
     flavour::SqliteFlavour,
-    sql_schema_differ::column::{ColumnDiffer, ColumnTypeChange},
-    sql_schema_differ::SqlSchemaDiffer,
+    sql_schema_differ::{
+        column::{ColumnDiffer, ColumnTypeChange},
+        differ_database::DifferDatabase,
+    },
 };
 use std::collections::HashSet;
 
@@ -21,7 +23,7 @@ impl SqlSchemaDifferFlavour for SqliteFlavour {
         true
     }
 
-    fn tables_to_redefine(&self, differ: &SqlSchemaDiffer<'_>) -> HashSet<String> {
+    fn tables_to_redefine(&self, differ: &DifferDatabase<'_>) -> HashSet<String> {
         differ
             .table_pairs()
             .filter(|differ| {

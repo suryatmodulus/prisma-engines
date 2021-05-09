@@ -1,4 +1,4 @@
-use super::{column::ColumnDiffer, ColumnTypeChange, SqlSchemaDiffer};
+use super::{column::ColumnDiffer, differ_database::DifferDatabase, ColumnTypeChange};
 use crate::{
     pair::Pair,
     sql_migration::{AlterEnum, AlterTable, CreateEnum, CreateIndex, DropEnum, DropIndex},
@@ -14,7 +14,7 @@ mod sqlite;
 /// Trait to specialize SQL schema diffing (resulting in migration steps) by SQL backend.
 pub(crate) trait SqlSchemaDifferFlavour {
     /// Return potential `AlterEnum` steps.
-    fn alter_enums(&self, _differ: &SqlSchemaDiffer<'_>) -> Vec<AlterEnum> {
+    fn alter_enums(&self, _differ: &DifferDatabase<'_>) -> Vec<AlterEnum> {
         Vec::new()
     }
 
@@ -35,12 +35,12 @@ pub(crate) trait SqlSchemaDifferFlavour {
     }
 
     /// Return potential `CreateEnum` steps.
-    fn create_enums(&self, _differ: &SqlSchemaDiffer<'_>) -> Vec<CreateEnum> {
+    fn create_enums(&self, _differ: &DifferDatabase<'_>) -> Vec<CreateEnum> {
         Vec::new()
     }
 
     /// Return potential `DropEnum` steps.
-    fn drop_enums(&self, _differ: &SqlSchemaDiffer<'_>) -> Vec<DropEnum> {
+    fn drop_enums(&self, _differ: &DifferDatabase<'_>) -> Vec<DropEnum> {
         Vec::new()
     }
 
@@ -54,13 +54,18 @@ pub(crate) trait SqlSchemaDifferFlavour {
         indexes.previous().name() != indexes.next().name()
     }
 
+    /// Should table names be compared case-insensitively during diffing?
+    fn lower_cases_table_names(&self) -> bool {
+        false
+    }
+
     /// Evaluate indexes/constraints that need to be dropped and re-created based on other changes in the schema
     fn push_index_changes_for_column_changes(
         &self,
         _alter_tables: &[AlterTable],
         _drop_indexes: &mut Vec<DropIndex>,
         _create_indexes: &mut Vec<CreateIndex>,
-        _differ: &SqlSchemaDiffer<'_>,
+        _differ: &DifferDatabase<'_>,
     ) {
     }
 
@@ -102,13 +107,9 @@ pub(crate) trait SqlSchemaDifferFlavour {
         false
     }
 
-    fn table_names_match(&self, names: Pair<&str>) -> bool {
-        names.previous() == names.next()
-    }
-
     /// Return the tables that cannot be migrated without being redefined. This
     /// is currently useful only on SQLite.
-    fn tables_to_redefine(&self, _differ: &SqlSchemaDiffer<'_>) -> HashSet<String> {
+    fn tables_to_redefine(&self, _differ: &DifferDatabase<'_>) -> HashSet<Pair<Option<usize>>> {
         HashSet::new()
     }
 

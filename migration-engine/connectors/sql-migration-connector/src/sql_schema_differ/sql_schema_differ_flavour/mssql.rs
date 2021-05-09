@@ -4,7 +4,7 @@ use crate::{
     sql_migration::{AlterTable, CreateIndex, DropIndex},
     sql_schema_differ::{
         column::{ColumnDiffer, ColumnTypeChange},
-        SqlSchemaDiffer,
+        differ_database::DifferDatabase,
     },
 };
 use native_types::{MsSqlType, MsSqlTypeParameter};
@@ -20,7 +20,7 @@ impl SqlSchemaDifferFlavour for MssqlFlavour {
         true
     }
 
-    fn tables_to_redefine(&self, differ: &SqlSchemaDiffer<'_>) -> HashSet<String> {
+    fn tables_to_redefine(&self, differ: &DifferDatabase<'_>) -> HashSet<String> {
         let autoincrement_changed = differ
             .table_pairs()
             .filter(|differ| differ.column_pairs().any(|c| c.autoincrement_changed()))
@@ -58,7 +58,7 @@ impl SqlSchemaDifferFlavour for MssqlFlavour {
         alter_tables: &[AlterTable],
         drop_indexes: &mut Vec<DropIndex>,
         create_indexes: &mut Vec<CreateIndex>,
-        differ: &SqlSchemaDiffer<'_>,
+        differ: &DifferDatabase<'_>,
     ) {
         for table in alter_tables {
             for column in table.changes.iter().filter_map(|change| change.as_alter_column()) {

@@ -85,12 +85,8 @@ impl SqlSchemaDifferFlavour for MysqlFlavour {
         true
     }
 
-    fn table_names_match(&self, names: Pair<&str>) -> bool {
-        if self.lower_cases_table_names() {
-            names.previous().eq_ignore_ascii_case(names.next())
-        } else {
-            names.previous() == names.next()
-        }
+    fn lower_cases_table_names(&self) -> bool {
+        self.lower_cases_table_names()
     }
 }
 

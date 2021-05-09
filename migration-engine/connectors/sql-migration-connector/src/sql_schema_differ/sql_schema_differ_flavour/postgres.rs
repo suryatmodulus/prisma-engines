@@ -3,10 +3,7 @@ use crate::{
     flavour::PostgresFlavour,
     pair::Pair,
     sql_migration::{AlterEnum, CreateEnum, DropEnum},
-    sql_schema_differ::{
-        column::{ColumnDiffer, ColumnTypeChange},
-        SqlSchemaDiffer,
-    },
+    sql_schema_differ::column::{ColumnDiffer, ColumnTypeChange},
 };
 use native_types::PostgresType;
 use once_cell::sync::Lazy;
@@ -19,7 +16,7 @@ use sql_schema_describer::walkers::IndexWalker;
 const POSTGRES_IDENTIFIER_SIZE_LIMIT: usize = 63;
 
 impl SqlSchemaDifferFlavour for PostgresFlavour {
-    fn alter_enums(&self, differ: &SqlSchemaDiffer<'_>) -> Vec<AlterEnum> {
+    fn alter_enums(&self, differ: &DifferDatabase<'_>) -> Vec<AlterEnum> {
         differ
             .enum_pairs()
             .filter_map(|enum_differ| {
@@ -39,7 +36,7 @@ impl SqlSchemaDifferFlavour for PostgresFlavour {
             .collect()
     }
 
-    fn create_enums(&self, differ: &SqlSchemaDiffer<'_>) -> Vec<CreateEnum> {
+    fn create_enums(&self, differ: &DifferDatabase<'_>) -> Vec<CreateEnum> {
         differ
             .created_enums()
             .map(|r#enum| CreateEnum {
@@ -48,7 +45,7 @@ impl SqlSchemaDifferFlavour for PostgresFlavour {
             .collect()
     }
 
-    fn drop_enums(&self, differ: &SqlSchemaDiffer<'_>) -> Vec<DropEnum> {
+    fn drop_enums(&self, differ: &DifferDatabase<'_>) -> Vec<DropEnum> {
         differ
             .dropped_enums()
             .map(|r#enum| DropEnum {
