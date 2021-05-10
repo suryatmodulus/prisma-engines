@@ -1,6 +1,7 @@
 use super::SqlSchemaDifferFlavour;
 use crate::{
     flavour::MssqlFlavour,
+    pair::Pair,
     sql_migration::{AlterTable, CreateIndex, DropIndex},
     sql_schema_differ::{
         column::{ColumnDiffer, ColumnTypeChange},
@@ -20,7 +21,7 @@ impl SqlSchemaDifferFlavour for MssqlFlavour {
         true
     }
 
-    fn tables_to_redefine(&self, differ: &DifferDatabase<'_>) -> HashSet<String> {
+    fn tables_to_redefine(&self, differ: &DifferDatabase<'_>) -> HashSet<Pair<Option<usize>>> {
         let autoincrement_changed = differ
             .table_pairs()
             .filter(|differ| differ.column_pairs().any(|c| c.autoincrement_changed()))

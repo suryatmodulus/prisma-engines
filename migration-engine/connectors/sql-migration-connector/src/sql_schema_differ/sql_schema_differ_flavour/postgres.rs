@@ -3,7 +3,10 @@ use crate::{
     flavour::PostgresFlavour,
     pair::Pair,
     sql_migration::{AlterEnum, CreateEnum, DropEnum},
-    sql_schema_differ::column::{ColumnDiffer, ColumnTypeChange},
+    sql_schema_differ::{
+        column::{ColumnDiffer, ColumnTypeChange},
+        differ_database::DifferDatabase,
+    },
 };
 use native_types::PostgresType;
 use once_cell::sync::Lazy;

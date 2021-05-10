@@ -45,6 +45,7 @@ pub(crate) struct DifferDatabase<'a> {
     dropped_tables: Vec<usize>,
     column_names: BTreeMap<(TableName<'a>, &'a str), Pair<Option<usize>>>,
     tables_to_redefine: HashSet<Pair<usize>>,
+    enums: HashMap<&'a str, Pair<Option<usize>>>,
 }
 
 impl<'a> DifferDatabase<'a> {
@@ -59,6 +60,10 @@ impl<'a> DifferDatabase<'a> {
 
         let mut table_names = HashMap::with_capacity(table_names_count_lb);
         let mut column_names = BTreeMap::new();
+        let mut enums = HashMap::with_capacity(std::cmp::max(
+            schemas.previous().enums.len(),
+            schemas.next().enums.len(),
+        ));
 
         // We are biased to created tables in the first pass, because migrations
         // tend to add rather than remove.
@@ -107,6 +112,15 @@ impl<'a> DifferDatabase<'a> {
             .filter_map(|t| *t.previous())
             .collect();
 
+        // Enums
+        {
+            for enm in schemas.previous().enum_walkers() {
+                enums.insert(enm.name(), Pair::new(Some(enm.enum_index()), None));
+            }
+
+            for enm in schemas.next().enum_walkers() {}
+        }
+
         let mut db = DifferDatabase {
             schemas,
             table_names,
@@ -114,6 +128,7 @@ impl<'a> DifferDatabase<'a> {
             table_pairs,
             dropped_tables,
             column_names,
+            enums,
             tables_to_redefine: HashSet::new(),
         };
 
