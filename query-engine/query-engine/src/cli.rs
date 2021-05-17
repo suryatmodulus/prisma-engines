@@ -131,18 +131,14 @@ impl CliCommand {
         let decoded = base64::decode(&request.query)?;
         let decoded_request = String::from_utf8(decoded)?;
 
-        let builder = PrismaContext::builder(
+        let cx = PrismaContext::builder(
             request.config.validate_that_one_datasource_is_provided()?,
             request.datamodel,
-        );
-
-        let cx = builder
-            .legacy(request.legacy)
-            .enable_raw_queries(request.enable_raw_queries)
-            .log_queries(true)
-            .build()
-            .await?;
-
+        )
+        .legacy(request.legacy)
+        .enable_raw_queries(request.enable_raw_queries)
+        .build()
+        .await?;
         let cx = Arc::new(cx);
 
         let handler = GraphQlHandler::new(&*cx.executor, cx.query_schema());
